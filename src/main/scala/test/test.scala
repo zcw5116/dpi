@@ -50,11 +50,7 @@ object test {
 
     resultDF.write.format("orc").mode(SaveMode.Overwrite).save("/tmp/tmp/")
 
-    sqlContext.sql("select count(*) from tmp").show()
-    val srcDF = sqlContext.read.format("text").load("/tmp/input/README.txt")
-    srcDF.rdd.flatMap(x=>x.getString(0).split(",")).map(x=>(x,1)).reduceByKey(_ + _).collect().foreach(println)
 
-    println("scala hello")
 
     val fcuser = sqlContext.read.format("text").load("/tmp/fcuser.txt").
       map(x=>x.getString(0).split("\t", 2)).map(x=>(x(0), x(1))).toDF("id", "mdn")
