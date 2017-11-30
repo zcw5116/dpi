@@ -4,7 +4,7 @@ import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.{SparkConf, SparkContext}
 
-/**
+/**a
   * Created by hadoop on 17-11-8.
   */
 object test {
