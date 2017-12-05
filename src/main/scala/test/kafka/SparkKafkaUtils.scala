@@ -75,7 +75,14 @@ object SparkKafkaUtils extends Serializable with Logging {
             logInfo("consume record: topic[" + topic + "] partition[" + i + "] offset[" + partitionOffset + "]")
           }
         } else {
+
           flag = 0
+          topics.foreach(topic=>{
+            fromOffsets += (TopicAndPartition(topic, 0) -> 0l)
+            fromOffsets += (TopicAndPartition(topic, 1) -> 0l)
+            fromOffsets += (TopicAndPartition(topic, 2) -> 0l)
+          })
+
         }
       }
     )
