@@ -26,7 +26,7 @@ object SparkKafkaUtils extends Serializable with Logging {
     *      否则从最大或者最小(根据kafka设置)的offset开始计算
     */
   def createDirectKafkaStream (ssc: StreamingContext, kafkaParams: Map[String, String],
-                               zkClient: ZkClient, topics: Set[String], groupName: String
+                               zkClient: ZkClient, topics: Set[Tuple2[String, Int]], groupName: String
                               ): InputDStream[(String, Int, Long, String)] = {
     val (fromOffsets, flag) = SparkKafkaUtils.getFromOffsets(zkClient, topics, groupName)
 
@@ -51,15 +51,16 @@ object SparkKafkaUtils extends Serializable with Logging {
     * Created by wangpf on 2017/6/14.
     * desc:遍历读取zookeeper的offset信息
     */
-  def getFromOffsets(zkClient : ZkClient,topics : Set[String],groupName : String): (Map[TopicAndPartition, Long], Int) = {
+  def getFromOffsets(zkClient : ZkClient,topics : Set[Tuple2[String, Int]],groupName : String): (Map[TopicAndPartition, Long], Int) = {
     // 如果 zookeeper中有保存offset,我们会利用这个offset作为kafkaStream 的起始位置
     var fromOffsets: Map[TopicAndPartition, Long] = Map()
     // 查看是否有未配置的topic
     var flag = 1
     topics.foreach(
       topic => {
+        val topicName = topic._1
         // 拼接zkTopicPath
-        val zkTopicPath = "/consumers/" + groupName + "/offsets/" + topic
+        val zkTopicPath = "/consumers/" + groupName + "/offsets/" + topicName
 
         // 查询该路径下是否字节点（默认有字节点为我们自己保存不同 partition 时生成的）
         val children = zkClient.countChildren(zkTopicPath)
@@ -69,18 +70,22 @@ object SparkKafkaUtils extends Serializable with Logging {
         if (children > 0) {
           for (i <- 0 until children) {
             val partitionOffset = zkClient.readData[String](s"${zkTopicPath}/${i}")
-            val tp = TopicAndPartition(topic, i)
+            val tp = TopicAndPartition(topicName, i)
             //将不同 partition 对应的 offset 增加到 fromOffsets 中
             fromOffsets += (tp -> partitionOffset.toLong)
-            logInfo("consume record: topic[" + topic + "] partition[" + i + "] offset[" + partitionOffset + "]")
+            logInfo("consume record: topic[" + topicName + "] partition[" + i + "] offset[" + partitionOffset + "]")
           }
         } else {
 
           flag = 0
           topics.foreach(topic=>{
-            fromOffsets += (TopicAndPartition(topic, 0) -> 0l)
-            fromOffsets += (TopicAndPartition(topic, 1) -> 0l)
-            fromOffsets += (TopicAndPartition(topic, 2) -> 0l)
+            val topicName = topic._1
+            val partitionNum = topic._2
+            var index = 0
+            for(index <- 0 until partitionNum ){
+              println("topicName:" + topicName)
+              fromOffsets += (TopicAndPartition(topicName, index) -> 0l)
+            }
           })
 
         }

@@ -34,7 +34,7 @@ object KafkaConsumer extends GetProperties {
 
     val ssc = new StreamingContext(sc, Seconds(10))
     // 创建stream时使用的topic名字集合
-    val topics: Set[String] = Set("test1")
+    val topics: Set[Tuple2[String, Int]] = Set(Tuple2("test1",3))
     // zookeeper的host和ip,创建一个client
     val zkClient = new ZkClient(prop.getProperty("kafka.zookeeper.list"),Integer.MAX_VALUE,10000, ZKStringSerializer)
     // 配置信息

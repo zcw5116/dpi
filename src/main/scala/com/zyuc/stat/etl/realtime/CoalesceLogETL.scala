@@ -9,8 +9,9 @@ import org.apache.spark.sql.hive.HiveContext
 
 import scala.collection.mutable
 
-/**
+/*
   * Created by hadoop on 17-12-13.
+  * @author x
   */
 object CoalesceLogETL {
   def main(args: Array[String]): Unit = {
@@ -19,57 +20,28 @@ object CoalesceLogETL {
     val sqlContext = new HiveContext(sc)
 
 
-    val appName = sc.getConf.get("spark.app.name")//,"name_201712101132")
-    val inputPath = sc.getConf.get("spark.app.inputPath", "hdfs://spark1234:8020/hadoop/IOT/data/cdr/input/pgw/")
-    val outputPath = sc.getConf.get("spark.app.outputPath", "hdfs://spark1234:8020/hadoop/IOT/data/cdr/output/pgw/")
+    val appName = sc.getConf.get("spark.app.name")//,"name_201712101135")
+    val inputPath = sc.getConf.get("spark.app.inputPath", "hdfs://spark1234:8020/hadoop/IOT/data/cdr/output/pgw/")
     val coalesceSize = sc.getConf.get("spark.app.coalesce.size", "200").toInt
 
-
-    val loadTime = appName.substring(appName.lastIndexOf("_") + 1)
+    val dataTime = appName.substring(appName.lastIndexOf("_") + 1)
     val fileSystem = FileSystem.get(sc.hadoopConfiguration)
-    val dd=loadTime.substring(2,8)
-    val hh=loadTime.substring(8,10)
-    val mm=loadTime.substring(10,12).toInt
-    val mm5=((mm/5)*5).toString
-    val getTemplate = "/d=" + dd +"/h=" + hh +"/m5=" + mm5
+    val d=dataTime.substring(2,8)
+    val h=dataTime.substring(8,10)
+    val m5=dataTime.substring(10,12)
+    val partitionPath = s"/d=$d/h=$h/m5=$m5"
 
+    // 将data/d=$d/h=$h/m5=$m5/下文件移动到 mergeTmp/${dataTime}/ 目录下
+    FileUtils.move2Temp(fileSystem, inputPath, partitionPath)
 
-    val outFiles = fileSystem.globStatus(new Path(outputPath + "data" + getTemplate +  "/*.orc"))
-    val filePartitions = new mutable.HashSet[String]
-    for (i <- 0 until outFiles.length) {
-      val nowPath = outFiles(i).getPath.toString
-      filePartitions.+=(nowPath.substring(0, nowPath.lastIndexOf("/")).replace(outputPath + "data","").substring(1))
-    }
-    CoalesceLogETL.move2TempFiles(fileSystem, outputPath, loadTime, getTemplate, filePartitions)
+    val tmpPath = new Path(inputPath + "mergeTmp/" +  dataTime )
+    val coalesce = FileUtils.makeCoalesce(fileSystem, tmpPath, coalesceSize)
+    val srcDF = sqlContext.read.format("orc").load(coalPath2).coalesce(coalesce)
+    srcDF.write.mode(SaveMode.Overwrite).format("orc").save(inputPath + "data" + partitionPath+"/")
 
-
-    val coalPath = new Path(outputPath + "temp" +  getTemplate )
-    val coalPath2 = coalPath.toString
-    val coalesce = FileUtils.makeCoalesce(fileSystem, coalPath2, coalesceSize)
-    val accSrc = sqlContext.read.format("orc").load(coalPath2).coalesce(coalesce)
-    accSrc.write.mode(SaveMode.Overwrite).format("orc").save(outputPath + "data" +getTemplate+"/")
-
-    val dataPath = new Path(outputPath + "temp"+getTemplate+"/*.orc")
-    fileSystem.globStatus(dataPath).foreach(x => fileSystem.delete(x.getPath(), false))
+    val tmpFiles = new Path(inputPath + "mergeTmp/" +  dataTime +"/*.orc")
+    fileSystem.globStatus(tmpFiles).foreach(x => fileSystem.delete(x.getPath(), false))
   }
 
-  def move2TempFiles(fileSystem: FileSystem, outputPath: String, loadTime: String, template: String, partitions: mutable.HashSet[String]): Unit = {
-
-    val dataPath = new Path(outputPath + "data" +  template + "/*.orc")
-    val dataStatus = fileSystem.globStatus(dataPath)
-
-    dataStatus.map(dataStat => {
-      val dataLocation = dataStat.getPath().toString
-      var tmpLocation = dataLocation.replace(outputPath + "data", outputPath + "temp")
-
-      val tmpPath = new Path(tmpLocation)
-      val dataPath = new Path(dataLocation)
-
-      if (!fileSystem.exists(tmpPath.getParent)) {
-        fileSystem.mkdirs(tmpPath.getParent)
-      }
-      fileSystem.rename(dataPath, tmpPath)
-    })
-  }
 
 }

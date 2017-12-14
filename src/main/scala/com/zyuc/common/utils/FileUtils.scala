@@ -253,6 +253,35 @@ object FileUtils extends Logging {
     isRename
   }
 
+  /**
+    * 对dataTime按照d/h/m5的一个三级分区下面的文件移动到临时目录mergeTmp/${datatime}
+    * @param fileSystem
+    * @param inputPath
+    * @param dataTime
+    */
+  def move2Temp(fileSystem: FileSystem, inputPath: String, dataTime: String): Unit = {
+
+    val d = dataTime.substring(2, 8)
+    val h = dataTime.substring(8, 10)
+    val m5 = dataTime.substring(10, 12)
+    val partitionPath = s"/d=$d/h=$h/m5=$m5"
+    val dataPath = new Path(inputPath + "data" +  partitionPath + "/*.orc")
+
+    val dataStatus = fileSystem.globStatus(dataPath)
+
+    dataStatus.map(dataStat => {
+      val dataLocation = dataStat.getPath().toString
+      var tmpLocation = dataLocation.replace(inputPath + "data" +  partitionPath, inputPath + "mergeTmp/" + dataTime)
+      val tmpPath = new Path(tmpLocation)
+      val dataPath = new Path(dataLocation)
+
+      if (!fileSystem.exists(tmpPath.getParent)) {
+        fileSystem.mkdirs(tmpPath.getParent)
+      }
+      fileSystem.rename(dataPath, tmpPath)
+    })
+  }
+
 
   def main(args: Array[String]): Unit = {
     val config = new Configuration

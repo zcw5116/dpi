@@ -1,3 +1,5 @@
 #kafka配置
-kafka.zookeeper.list=spark123:12181
-kafka.metadata.broker.list=spark123:9092
+kafka.zookeeper.list=172.18.132.81:2181,172.18.132.82:2181,172.18.132.95:2181
+kafka.metadata.broker.list=172.18.132.81:9092,172.18.132.82:9092,172.18.132.95:9092
+#kafka.zookeeper.list=spark123:12181
+#kafka.metadata.broker.list=spark123:9092

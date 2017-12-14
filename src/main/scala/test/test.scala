@@ -1,8 +1,11 @@
 package test
 
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.functions.{count, lit}
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.{SparkConf, SparkContext}
+
+import scala.collection.mutable
 
 /**a
   * Created by hadoop on 17-11-8.
@@ -15,6 +18,25 @@ object test {
     val sqlContext = new HiveContext(sc)
 
     sqlContext.sql("use iot")
+
+    val testRDD = sqlContext.sql("select mdn, internettype from iot_basic_userinfo where d='20170922' and isdirect=1").flatMap(x=>{
+      val mdn = x.getString(0)
+      val services = x.getString(1).split(",")
+      val serviceSet = new mutable.HashSet[Tuple2[String, String]]()
+      services.foreach(s=>{
+        serviceSet.+= ((mdn, s))
+      })
+      serviceSet
+    })
+
+    import sqlContext.implicits._
+    val testDF = testRDD.toDF("mdn", "service")
+    testDF.select("service").
+      filter(!testDF.col("service").startsWith("1000")
+        and !testDF.col("service").startsWith("2000")
+        and !testDF.col("service").startsWith("DefaultNBIOT")).groupBy("service").agg(count(lit(1)).alias("usercnt"))
+
+
 
     val sql =
       s"""

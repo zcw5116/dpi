@@ -5,7 +5,7 @@ package com.zyuc.common.properties
   */
 object Conf {
 
-  val ZOOKEEPER_CLIENTPORT = "12181";
-  val ZOOKEEPER_QUORUM = "spark123"
+  val ZOOKEEPER_CLIENTPORT = "2181";
+  val ZOOKEEPER_QUORUM = "DPI-CDH-008,DPI-CDH-009,DPI-CDH-010"
 }
 
