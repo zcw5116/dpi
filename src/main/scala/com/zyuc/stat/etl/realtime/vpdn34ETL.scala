@@ -53,16 +53,16 @@ object vpdn34ETL {
       val coalesce = FileUtils.makeCoalesce(fileSystem, dataPathWild, coalesceSize)
       val df = sqlContext.read.json(dataPathWild).coalesce(coalesce)
       val newDF = vpdn34ConventUtil.convert(df, netType)
-      val outputPath = path + netType
+      val outputPath = path + netType + "/"
       newDF.write.mode(SaveMode.Overwrite).format("orc")
         .partitionBy(partitions.split(","):_*)
-        .save(outputPath + "/temp/" + loadTime)
+        .save(outputPath + "temp/" + loadTime)
 
-      val outFiles = fileSystem.globStatus(new Path(outputPath + "/temp/" + loadTime + getTemplate + "/*.orc"))
+      val outFiles = fileSystem.globStatus(new Path(outputPath + "temp/" + loadTime + getTemplate + "/*.orc"))
       val filePartitions = new mutable.HashSet[String]
       for (i <- 0 until outFiles.length) {
         val nowPath = outFiles(i).getPath.toString
-        filePartitions.+=(nowPath.substring(0, nowPath.lastIndexOf("/")).replace(outputPath + "/temp/" + loadTime, "").substring(1))
+        filePartitions.+=(nowPath.substring(0, nowPath.lastIndexOf("/")).replace(outputPath + "temp/" + loadTime, "").substring(1))
       }
       FileUtils.moveTempFiles(fileSystem, outputPath, loadTime, getTemplate, filePartitions)
 
