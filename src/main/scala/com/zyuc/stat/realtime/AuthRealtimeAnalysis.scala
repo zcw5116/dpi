@@ -2,7 +2,7 @@ package com.zyuc.stat.realtime
 
 import com.zyuc.common.properties.ConfigProperties
 import com.zyuc.stat.realtime.util.AuthHtableConverter
-import com.zyuc.stat.utils.{DateUtils, HbaseUtils, MathUtil}
+import com.zyuc.stat.utils.{DateUtils, HbaseDataUtil, HbaseUtils, MathUtil}
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.util.Bytes
