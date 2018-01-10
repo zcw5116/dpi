@@ -37,9 +37,9 @@ object AuthRealtimeAnalysis extends Logging{
     val companyAndDomainTable = sc.getConf.get("spark.app.table.companyAndDomainTable", "iot_basic_company_and_domain")
     val userTableDataDayid = sc.getConf.get("spark.app.table.userTableDataDayid")
 
-    val auth3gTable = sc.getConf.get("spark.app.table.auth3gTable", "iot_userauth_3gaaa")
-    val auth4gTable = sc.getConf.get("spark.app.table.auth4gTable", "iot_userauth_4gaaa")
-    val authVPDNTable = sc.getConf.get("spark.app.table.authVPDNTable", "iot_userauth_vpdn")
+    val auth3gTable = sc.getConf.get("spark.app.accessTable3g", "iot_etl_data_auth_3g")
+    val auth4gTable = sc.getConf.get("spark.app.accessTable4g", "iot_etl_data_auth_4g")
+    val authVPDNTable = sc.getConf.get("spark.app.accessTableVpdn", "iot_etl_data_auth_vpdn")
     val alarmHtablePre = sc.getConf.get("spark.app.htable.alarmTablePre", "analyze_summ_tab_auth_")
     val resultHtablePre = sc.getConf.get("spark.app.htable.resultHtablePre", "analyze_summ_rst_auth_")
     val resultDayHtable = sc.getConf.get("spark.app.htable.resultDayHtable", "analyze_summ_rst_everyday")
@@ -75,9 +75,9 @@ object AuthRealtimeAnalysis extends Logging{
     val endTimeStr = DateUtils.timeCalcWithFormatConvertSafe(dataTime, "yyyyMMddHHmm", 0, "yyyy-MM-dd HH:mm:ss")
     // 转换成hive表中的分区字段值
     val startTime =  DateUtils.timeCalcWithFormatConvertSafe(dataTime, "yyyyMMddHHmm", -5*60, "yyyyMMddHHmm")
-    val partitionD = startTime.substring(0, 8)
+    val partitionD = startTime.substring(2, 8)
     val partitionH = startTime.substring(8, 10)
-
+    val partitionM5 = startTime.substring(10, 12)
     /////////////////////////////////////////////////////////////////////////////////////////
     //  Hbase 相关的表
     //  表不存在， 就创建
@@ -139,25 +139,22 @@ object AuthRealtimeAnalysis extends Logging{
          |       a.auth_result, a.nasportid,
          |       case when a.auth_result = 0 then 's' else 'f' end as result
          |from  ${userInfoTableCached} u, ${auth3gTable} a
-         |where a.dayid = '${partitionD}'  and a.hourid = '${partitionH}'
+         |where a.d = '${partitionD}'  and a.h = '${partitionH}'  and a.m5 = '${partitionM5}'
          |      and u.imsicdma = a.imsicdma
-         |      and a.auth_time >= '${startTimeStr}' and a.auth_time < '${endTimeStr}'
          |union all
          |select '4g' type, a.mdn,
          |       regexp_extract(a.nai_sercode, '^.+@(.*)', 1) as  mdndomain,
          |       a.auth_result, a.nasportid,
          |       case when a.auth_result = 0 then 's' else 'f' end as result
          |from ${auth4gTable} a
-         |where a.dayid = '${partitionD}'  and a.hourid = '${partitionH}'
-         |      and a.auth_time >= '${startTimeStr}' and a.auth_time < '${endTimeStr}'
+         |where a.d = '${partitionD}'  and a.h = '${partitionH}'  and a.m5 = '${partitionM5}'
          |union all
          |select 'vpdn' type, a.mdn,
          |       regexp_extract(a.nai_sercode, '^.+@(.*)', 1) as mdndomain,
          |       a.auth_result, "-1" as nasportid,
          |       case when a.auth_result = 1 then 's' else 'f' end as result
          |from ${authVPDNTable} a
-         |where a.dayid = '${partitionD}'  and a.hourid = '${partitionH}'
-         |      and a.auth_time >= '${startTimeStr}' and a.auth_time < '${endTimeStr}'
+         |where a.d = '${partitionD}'  and a.h = '${partitionH}'  and a.m5 = '${partitionM5}'
          |) m, ${userInfoTableCached} u
          |where m.mdn = u.mdn
        """.stripMargin
