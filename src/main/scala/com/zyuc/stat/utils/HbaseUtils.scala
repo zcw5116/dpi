@@ -1,5 +1,6 @@
 package com.zyuc.stat.utils
 
+import com.zyuc.common.properties.ConfigProperties
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.mapred.TableOutputFormat

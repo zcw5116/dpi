@@ -36,7 +36,9 @@ object CoalesceLogETL {
 
     val tmpPath = (new Path(inputPath + "mergeTmp/" +  dataTime )).toString
     val coalesce = FileUtils.makeCoalesce(fileSystem, tmpPath, coalesceSize)
+
     val srcDF = sqlContext.read.format("orc").load(tmpPath).coalesce(coalesce)
+
     srcDF.write.mode(SaveMode.Overwrite).format("orc").save(inputPath + "data" + partitionPath+"/")
 
     val tmpFiles = new Path(inputPath + "mergeTmp/" +  dataTime +"/*.orc")
