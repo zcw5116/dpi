@@ -52,7 +52,7 @@ object StreamingDemo extends Logging{
       ssc.sparkContext.broadcast(KafkaSink[String, String](kafkaProducerConfig))
     }
     // 定义
-    var yourBroadcast = BroadcastWrapper[DataFrame](ssc, getOracleTable)
+   // var yourBroadcast = BroadcastWrapper[DataFrame](ssc, getOracleTable)
 
     println("test#########################################")
     println("test#########################################")
@@ -61,15 +61,16 @@ object StreamingDemo extends Logging{
     val t = fmt.format(new Date(System.currentTimeMillis)).toInt
     //输出到kafka
     lineStream.transform(rdd=>{
-      yourBroadcast.update(getOracleTable, true)
-      val df = yourBroadcast.value
-      df.show()
+      //yourBroadcast.update(getOracleTable, true)
+      //val df = yourBroadcast.value
+      //df.show()
       rdd
     }).foreachRDD(rdd => {
       if (!rdd.isEmpty) {
         val words = rdd.flatMap(_.split(" ")).map(x => (x, 1)).reduceByKey(_ + _).map(x=>x._1 + "|" + x._2)
         words.collect().foreach(println)
         words.foreach(record => {
+          println("record:" + record)
           kafkaProducer.value.send(Conf.outTopics, record)
           // do something else
         })

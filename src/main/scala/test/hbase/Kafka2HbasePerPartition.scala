@@ -56,6 +56,7 @@ object Kafka2HbasePerPartition extends GetProperties {
     // 获取kafkaStream
     val kafkaStream = SparkKafkaUtils.createDirectKafkaStream(ssc, kafkaParams, zkClient, topics, groupName)
 
+
     kafkaStream.foreachRDD(rdd => {
       if (!rdd.isEmpty()) {
 
@@ -91,7 +92,7 @@ object Kafka2HbasePerPartition extends GetProperties {
   def save2Hbase(data: Iterator[Tuple4[String, Int, Long, String]], offsetRange:OffsetRange, htable: String) = {
 
     val conn = HbaseUtils.getConnect(Conf.ZOOKEEPER_QUORUM, Conf.ZOOKEEPER_CLIENTPORT)
-    val tableName = TableName.valueOf(htable)
+    val tableName = TableName.valueOf(Bytes.toBytes(htable), Bytes.toBytes(htable))
     val table = conn.getTable(tableName)
 
     data.foreach(r => {

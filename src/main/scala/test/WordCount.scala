@@ -13,6 +13,9 @@ object WordCount {
     val sparkConf = new SparkConf().setMaster("local[2]").setAppName("test")
     val sc = new SparkContext(sparkConf)
     val sqlContext = new HiveContext(sc)
+    val sQLContext2 = new HiveContext(sc)
+
+    sQLContext2.read.format("text").load("/tmp/tmp.txt").show()
 
     val filePath = "/tmp/tmp.txt"
 
